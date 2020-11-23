@@ -436,7 +436,6 @@ char readChar()
 
 RedBotMotors motors;
 RedBotEncoder encoder = RedBotEncoder(A2, 10);  // initializes encoder on pins A2 and 10
-RedBotAccel accelerometer;
 
 int leftPower;  // variable for setting the drive power
 int rightPower;
@@ -507,32 +506,19 @@ void loop()
       
           // Update sensor readings
           read_sensors();
-      
-          if (output_mode == OUTPUT__MODE_CALIBRATE_SENSORS)  // We're in calibration mode
-          {
-            check_reset_calibration_session();  // Check if this session needs a reset
-            if (output_stream_on || output_single_on) output_calibration(curr_calibration_sensor);
-          }
-          else if (output_mode == OUTPUT__MODE_ANGLES)  // Output angles
-          {
-            // Apply sensor calibration
-            compensate_sensor_errors();
+
+          // Apply sensor calibration
+          compensate_sensor_errors();
+        
+          // Run DCM algorithm
+          Compass_Heading(); // Calculate magnetic heading
+          Matrix_update();
+          Normalize();
+          Drift_correction();
+          Euler_angles();
           
-            // Run DCM algorithm
-            Compass_Heading(); // Calculate magnetic heading
-            Matrix_update();
-            Normalize();
-            Drift_correction();
-            Euler_angles();
-            
-            if (output_stream_on || output_single_on) output_angles();
-          }
-          else  // Output sensor values
-          {      
-            if (output_stream_on || output_single_on) output_sensors();
-          }
-          
-          output_single_on = false;
+          compensate_sensor_errors();
+          output_sensors_text('C');
 
           // store the encoder counts to a variable.
           lCount = encoder.getTicks(LEFT);    // read the left motor encoder
