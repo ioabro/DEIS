@@ -5,7 +5,6 @@ Created on Mon Nov 16 10:03:30 2020
 @ Christo George christogeorge@live.in
 """
 
-
 import rclpy
 import threading
 import cv2
@@ -13,8 +12,6 @@ from rclpy.node import Node
 from deis_py_dev.tello import Tello
 from std_msgs.msg import String
 from PIL import Image
-
-
 
 class droneActor(Node):
 
