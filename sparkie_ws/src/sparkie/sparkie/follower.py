@@ -5,11 +5,13 @@
 # Nov 2020
 # Remember OpenCV is BGR
 
+import os
 import sys
 import cv2 as cv
 import numpy as np
-import cv2.aruco as aruco
+from cv2 import aruco
 import glob
+import pickle
 
 #ROS 2
 import rclpy
@@ -18,17 +20,29 @@ from std_msgs.msg import String
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Range
 
+# Check for camera calibration data
+if not os.path.exists('/home/ubuntu/dev_ws/src/deis_py_dev/cameraCalibrations/sparkieCalibration.pckl'):
+    print("You need to calibrate the camera you'll be using. See calibration project directory for details.")
+    exit()
+else:
+    f = open('/home/ubuntu/dev_ws/src/deis_py_dev/cameraCalibrations/sparkieCalibration.pckl', 'rb')
+    (cameraMatrix, distCoeffs) = pickle.load(f)
+    f.close()
+    if cameraMatrix is None or distCoeffs is None:
+        print("Calibration issue. Remove ./calibration.pckl and recalibrate your camera with CalibrateCamera.py.")
+        exit()
+
 # Constant parameters used in Aruco methods
 ARUCO_PARAMETERS = aruco.DetectorParameters_create()
 ARUCO_DICT = aruco.Dictionary_get(aruco.DICT_6X6_1000)
 
-# Create grid board object we're using in our stream
-board = aruco.GridBoard_create(
-        markersX=2,
-        markersY=2,
-        markerLength=0.09,
-        markerSeparation=0.01,
-        dictionary=ARUCO_DICT)
+# # Create grid board object we're using in our stream
+# board = aruco.GridBoard_create(
+#         markersX=2,
+#         markersY=2,
+#         markerLength=0.09,
+#         markerSeparation=0.01,
+#         dictionary=ARUCO_DICT)
 
 # Create vectors we'll be using for rotations and translations for postures
 rvecs, tvecs = None, None
@@ -91,10 +105,18 @@ def main(args=None):
             print("Center X: %d" %center_x)
             print("Center Y: %d" %center_y)
 
+            rvecs, tvecs, _objPoints = aruco.estimatePoseSingleMarkers(corners, 3.2, cameraMatrix, distCoeffs)
+            distance = cv.norm(tvecs)
+            print(cv.norm(tvecs)) 
+
             # Find center
             cam_center = HorizontalPixels / 2
 
-            if center_x < cam_center:
+            if distance < 17.0:
+                msg.data = '0 0\n'
+                f.publisher_.publish(msg)
+                f.get_logger().info('Publishing: "%s"' % msg.data)
+            elif center_x < cam_center:
                 gain = int((cam_center - center_x) / 10)
                 LM = base_speed 
                 RM = base_speed + gain
