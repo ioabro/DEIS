@@ -5,6 +5,9 @@
 # Nov 2020
 # Remember OpenCV is BGR
 
+# Resources: 
+# - OpenCV-Python tutorial for calibration: http://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_calib3d/py_calibration/py_calibration.html
+
 import os
 import numpy as np
 import cv2 as cv
