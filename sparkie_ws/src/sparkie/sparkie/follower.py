@@ -59,6 +59,7 @@ def main(args=None):
 
     f = Follower()
     msg = String()
+    msg.data = '0 0\n'
 
     base_speed = 70
 
@@ -137,7 +138,12 @@ def main(args=None):
                 f.publisher_.publish(msg)
                 f.get_logger().info('Publishing: "%s"' % msg.data)
 
- 
+        # No marker found
+        else:
+            msg.data = '0 0\n'
+            f.publisher_.publish(msg)
+            f.get_logger().info('Publishing: "%s"' % msg.data)
+
         f.get_logger().info('Publishing: "%s"' % msg.data)
             
         cv.imshow("Snapshot", frame)
