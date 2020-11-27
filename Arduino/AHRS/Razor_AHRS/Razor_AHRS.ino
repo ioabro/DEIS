@@ -126,7 +126,8 @@
 // Sensor data output interval in milliseconds
 // This may not work, if faster than 20ms (=50Hz)
 // Code is tuned for 20ms, so better leave it like that
-#define OUTPUT__DATA_INTERVAL 20  // in milliseconds
+// #define OUTPUT__DATA_INTERVAL 20  // in milliseconds
+#define OUTPUT__DATA_INTERVAL 100  // in milliseconds
 
 // Output mode definitions (do not change)
 #define OUTPUT__MODE_CALIBRATE_SENSORS 0 // Outputs sensor min/max values as text for manual calibration
@@ -432,6 +433,7 @@ char readChar()
   return Serial.read();
 }
 
+/*************************************/
 #include <RedBot.h>
 
 RedBotMotors motors;
@@ -446,6 +448,16 @@ int countsPerRev = 192;   // 4 pairs of N-S x 48:1 gearbox = 192 ticks per wheel
 // variables used to store the left and right encoder counts.
 int lCount;
 int rCount;
+
+// Speaker Pin
+const int speaker = 9;
+
+// Pins
+const int TRIG_PIN = A1;
+const int ECHO_PIN = A0;
+
+// Anything over 400 cm (23200 us pulse) is "out of range"
+const unsigned int MAX_DIST = 23200;
 
 void setup()
 {
@@ -477,14 +489,36 @@ void setup()
   output_mode = OUTPUT__MODE_SENSORS_CALIB;
   output_format = OUTPUT__FORMAT_TEXT;
 
+  // set the pin mode for the speaker to be an output
+  pinMode(speaker, OUTPUT);
+
+  // The Trigger pin will tell the sensor to range find
+  pinMode(TRIG_PIN, OUTPUT);
+  digitalWrite(TRIG_PIN, LOW);
+
+  //Set Echo pin as input to measure the duration of 
+  //pulses coming back from the distance sensor
+  pinMode(ECHO_PIN, INPUT);
+
   encoder.clearEnc(BOTH);  // Reset the counters.
 }
 
 // Main loop
 void loop()
 {
+  // How often should this be?
+  if (getRange())
+  {
+    // Too close! Start buzzing!
+    motors.brake();
+    tone(speaker, 2000); // The frequency value can be between 20-20000 Hz
+  }
+
+  // Shut up speaker!
+  noTone(speaker);
+
   // Read incoming control messages
-  if (Serial.available() >= 2)
+  else if (Serial.available() >= 2)
   {
         leftPower = Serial.parseInt();  // read in the next numeric value
         leftPower = constrain(leftPower, -255, 255);  // constrain the data to -255 to +255
@@ -494,43 +528,82 @@ void loop()
 
         motors.leftMotor(leftPower);
         motors.rightMotor(rightPower);
-
-        // Time to read the sensors again?
-        if((millis() - timestamp) >= OUTPUT__DATA_INTERVAL)
-        {
-          timestamp_old = timestamp;
-          timestamp = millis();
-          if (timestamp > timestamp_old)
-            G_Dt = (float) (timestamp - timestamp_old) / 1000.0f; // Real time of loop run. We use this on the DCM algorithm (gyro integration time)
-          else G_Dt = 0;
-      
-          // Update sensor readings
-          read_sensors();
-
-          // Apply sensor calibration
-          compensate_sensor_errors();
-        
-          // Run DCM algorithm
-          Compass_Heading(); // Calculate magnetic heading
-          Matrix_update();
-          Normalize();
-          Drift_correction();
-          Euler_angles();
-          
-          compensate_sensor_errors();
-          output_sensors_text('C');
-
-          // store the encoder counts to a variable.
-          lCount = encoder.getTicks(LEFT);    // read the left motor encoder
-          rCount = encoder.getTicks(RIGHT);   // read the right motor encoder
-
-          Serial.print(lCount);  // tab
-          Serial.print("_");  // tab
-          Serial.println(rCount);  // tab
-
-          encoder.clearEnc(BOTH);  // Reset the counters.
-
-       }
   }
+  else
+    ;
   
+
+  // Time to read the sensors again?
+  // This takes 10 ms to finish
+  if((millis() - timestamp) >= OUTPUT__DATA_INTERVAL) // this happens every 100 ms
+  {
+    timestamp_old = timestamp;
+    timestamp = millis();
+    if (timestamp > timestamp_old)
+      G_Dt = (float) (timestamp - timestamp_old) / 1000.0f; // Real time of loop run. We use this on the DCM algorithm (gyro integration time)
+    else G_Dt = 0;
+
+    // Update sensor readings
+    read_sensors();
+
+    // Apply sensor calibration
+    compensate_sensor_errors();
+  
+    // Run DCM algorithm
+    Compass_Heading(); // Calculate magnetic heading
+    Matrix_update();
+    Normalize();
+    Drift_correction();
+    Euler_angles();
+    
+    compensate_sensor_errors();
+    output_sensors_text('C');
+
+    // store the encoder counts to a variable.
+    lCount = encoder.getTicks(LEFT);    // read the left motor encoder
+    rCount = encoder.getTicks(RIGHT);   // read the right motor encoder
+
+    Serial.print(lCount);  // tab
+    Serial.print("_");  // tab
+    Serial.println(rCount);  // tab
+
+    encoder.clearEnc(BOTH);  // Reset the counters.
+  }
+}
+
+int getRange() 
+{
+  int flag = 0;
+  unsigned long t1;
+  unsigned long t2;
+  unsigned long pulse_width;
+  float cm;
+  float inches;
+
+  // Hold the trigger pin high for at least 10 us
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+
+  // Wait for pulse on echo pin
+  while ( digitalRead(ECHO_PIN) == 0 );
+
+  // Measure how long the echo pin was held high (pulse width)
+  // Note: the micros() counter will overflow after ~70 min
+  t1 = micros();
+  while ( digitalRead(ECHO_PIN) == 1);
+  t2 = micros();
+  pulse_width = t2 - t1;
+
+  // Calculate distance in centimeters and inches. The constants
+  // are found in the datasheet, and calculated from the assumed speed
+  //of sound in air at sea level (~340 m/s).
+  cm = pulse_width / 58.0;
+  inches = pulse_width / 148.0;
+
+  if ( cm < 20 ){
+    flag = 1;
+  } 
+
+  return flag;
 }

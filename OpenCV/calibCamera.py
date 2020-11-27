@@ -14,12 +14,14 @@ import cv2 as cv
 import glob
 import pickle
 
+measuredLength = 23 # Measured length of one side of the square in the printed chessboard mm 
+
 # termination criteria
 criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
 # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
 objp = np.zeros((6*9,3), np.float32)
-objp[:,:2] = np.mgrid[0:9,0:6].T.reshape(-1,2)*23
+objp[:,:2] = np.mgrid[0:9,0:6].T.reshape(-1,2)*measuredLength
 
 # Arrays to store object points and image points from all the images.
 objpoints = [] # 3d point in real world space
@@ -29,7 +31,7 @@ cam = cv.VideoCapture(0)
 
 count = 0
 
-while count < 21:
+while count < 51:
 
     # Capturing each frame of our video stream
     ret, QueryImg = cam.read()
@@ -47,9 +49,13 @@ while count < 21:
         # Draw and display the corners
         cv.drawChessboardCorners(QueryImg, (9,6), corners2, ret)
         cv.imshow('img', QueryImg)
-        cv.waitKey(500)
+        if cv.waitKey(500) == 27: # Wait for 10ms, if key == 27 (esc char) break
+            break
 
 cv.destroyAllWindows()
+
+print("Done taking images!")
+print("Calculating...")
 
 ret, mtx, dist, rvecs, tvecs = cv.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
 
