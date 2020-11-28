@@ -67,6 +67,10 @@ class Odometer(Node):
     def listener_callback(self, msg):
         self.get_logger().info('I heard: "%s"' % msg.data)
         data = msg.data.split(sep="_")
+        # Validate data
+        if len(data) != 2:
+            self.get_logger().info('Missed Data!')
+            return
         left_ticks = int(data[0])
         right_ticks = -int(data[1])
         # Transform encoder values (pulses) into distance travelled by the wheels (mm)
