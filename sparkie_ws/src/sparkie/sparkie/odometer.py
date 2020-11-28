@@ -77,7 +77,7 @@ class Odometer(Node):
         # Change of wheel displacements, i.e displacement of left and right wheels
         dDr = left_ticks * self.MM_PER_PULSE
         dDl = right_ticks * self.MM_PER_PULSE
-        if dDl < 300 or dDr < 300: # Threshold reject outliers
+        if dDl < 300 and dDr < 300: # Threshold reject outliers
             self.current_time = self.get_clock().now().to_msg()
             if self.last_time == None:
                 dt = 0.1
@@ -94,6 +94,7 @@ class Odometer(Node):
             self.X = self.X + dX
             self.Y = self.Y + dY
             self.A = (self.A + dA) % (2*pi)
+            
             # Predict the new uncertainty in the state variables (Error prediction)
             # Cxya_old = [ P[0], P[1], P[2] ]   # Uncertainty in state variables at time k-1 [3x3]
             # Uncertainty in the input variables [2x2]

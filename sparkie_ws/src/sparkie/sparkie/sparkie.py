@@ -38,29 +38,28 @@ class Sparkie(Node):
         self.ser.write(msg.data.encode())
         
     def get_sensorData_callback(self):
-    	if(self.ser.in_waiting > 0):
-    		data = self.ser.readline().decode()
-    		#self.sensor_readings_file.write(data)
-    		data = data.split(sep=" ")
-    		# current_time = self.get_clock().now().to_msg()
+    	if (self.ser.in_waiting > 0):
+            data = self.ser.readline().decode()
+            # self.sensor_readings_file.write(data)
+            data = data.split(sep=" ")
+            # current_time = self.get_clock().now().to_msg()
             # Validate data
             if len(data) == 2:
                 msg_enc = String()
-                #msg_enc.data = current_time + "_" + data[0]
+                # msg_enc.data = current_time + "_" + data[0]
                 msg_enc.data = data[0]
                 self.publisher_odom.publish(msg_enc)
                 msg_imu = String()
-                #msg_imu.data = current_time + "_" + data[1]
+                # msg_imu.data = current_time + "_" + data[1]
                 msg_imu.data = data[1]
                 self.publisher_imu.publish(msg_imu)
             else:
                 msg_enc = String()
-                #msg_enc.data = current_time + "_" + data[1]
+                # msg_enc.data = current_time + "_" + data[1]
                 msg_enc.data = data[0]
                 self.publisher_odom.publish(msg_enc)
                 self.get_logger().info('Missed Data!')
-
-    		
+                
 
 def main(args=None):
     rclpy.init(args=args)
