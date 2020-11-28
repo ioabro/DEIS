@@ -510,15 +510,17 @@ void loop()
   if (getRange())
   {
     // Too close! Start buzzing!
-    motors.brake();
+    // motors.brake();  // Don't stop, we will not be able to manouver!
     tone(speaker, 2000); // The frequency value can be between 20-20000 Hz
   }
-
-  // Shut up speaker!
-  noTone(speaker);
+  else
+  {
+    // Shut up speaker!
+    noTone(speaker);
+  }
 
   // Read incoming control messages
-  else if (Serial.available() >= 2)
+  if (Serial.available() >= 2)
   {
         leftPower = Serial.parseInt();  // read in the next numeric value
         leftPower = constrain(leftPower, -255, 255);  // constrain the data to -255 to +255
@@ -529,9 +531,6 @@ void loop()
         motors.leftMotor(leftPower);
         motors.rightMotor(rightPower);
   }
-  else
-    ;
-  
 
   // Time to read the sensors again?
   // This takes 10 ms to finish
@@ -543,6 +542,19 @@ void loop()
       G_Dt = (float) (timestamp - timestamp_old) / 1000.0f; // Real time of loop run. We use this on the DCM algorithm (gyro integration time)
     else G_Dt = 0;
 
+    // First send encoder, most important!
+    // store the encoder counts to a variable.
+    lCount = encoder.getTicks(LEFT);    // read the left motor encoder
+    rCount = encoder.getTicks(RIGHT);   // read the right motor encoder
+
+    Serial.print(lCount);  // tab
+    Serial.print("_");  // tab
+    Serial.print(rCount);  // tab
+    Serial.print(" ");  // tab
+
+    encoder.clearEnc(BOTH);  // Reset the counters.
+
+    // Send IMU
     // Update sensor readings
     read_sensors();
 
@@ -558,16 +570,6 @@ void loop()
     
     compensate_sensor_errors();
     output_sensors_text('C');
-
-    // store the encoder counts to a variable.
-    lCount = encoder.getTicks(LEFT);    // read the left motor encoder
-    rCount = encoder.getTicks(RIGHT);   // read the right motor encoder
-
-    Serial.print(lCount);  // tab
-    Serial.print("_");  // tab
-    Serial.println(rCount);  // tab
-
-    encoder.clearEnc(BOTH);  // Reset the counters.
   }
 }
 

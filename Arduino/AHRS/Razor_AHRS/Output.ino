@@ -88,7 +88,7 @@ void output_sensors_text(char raw_or_calibrated)
   
   Serial.print(yaw); Serial.print("_");
   Serial.print(pitch); Serial.print("_");
-  Serial.print(roll); Serial.print(" ");
+  Serial.print(roll); Serial.println();
 }
 
 void output_sensors_binary()
