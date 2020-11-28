@@ -42,15 +42,24 @@ class Sparkie(Node):
     		data = self.ser.readline().decode()
     		#self.sensor_readings_file.write(data)
     		data = data.split(sep=" ")
-    		#current_time = self.get_clock().now().to_msg()
-    		msg_imu = String()
-    		#msg_imu.data = current_time + "_" + data[0]
-    		msg_imu.data = data[0]
-    		self.publisher_imu.publish(msg_imu)
-    		msg_enc = String()
-    		#msg_enc.data = current_time + "_" + data[1]
-    		msg_enc.data = data[1]
-    		self.publisher_odom.publish(msg_enc)
+    		# current_time = self.get_clock().now().to_msg()
+            # Validate data
+            if len(data) == 2:
+                msg_enc = String()
+                #msg_enc.data = current_time + "_" + data[0]
+                msg_enc.data = data[0]
+                self.publisher_odom.publish(msg_enc)
+                msg_imu = String()
+                #msg_imu.data = current_time + "_" + data[1]
+                msg_imu.data = data[1]
+                self.publisher_imu.publish(msg_imu)
+            else:
+                msg_enc = String()
+                #msg_enc.data = current_time + "_" + data[1]
+                msg_enc.data = data[0]
+                self.publisher_odom.publish(msg_enc)
+                self.get_logger().info('Missed Data!')
+
     		
 
 def main(args=None):
