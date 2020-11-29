@@ -15,10 +15,10 @@ from geometry_msgs.msg import PointStamped
 Landmarks = [ (0, 0), (0, 0), (0, 0) ]
 
 def circleCircle( z, id1, R1, id2, R2, id3, R3):
-
-    r1 =  math.sqrt(R1**2 + z**2)
-    r2 =  math.sqrt(R2**2 + z**2)
-    r3 =  math.sqrt(R3**2 + z**2)
+    # Maybe should add validation if z > R
+    r1 =  math.sqrt(R1**2 - z**2)
+    r2 =  math.sqrt(R2**2 - z**2)
+    r3 =  math.sqrt(R3**2 - z**2)
 
     # dx and dy are the vertical and horizontal distances between
     # the circle centers.
