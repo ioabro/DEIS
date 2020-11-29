@@ -72,6 +72,7 @@ class Odometer(Node):
             self.get_logger().info('Missed Data!')
             return
         if not data[0].lstrip('-').isdigit() and not data[1].lstrip('-').isdigit():
+            self.get_logger().info('Missed Data!')
             return
         left_ticks = int(data[0])
         right_ticks = -int(data[1])
