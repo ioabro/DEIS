@@ -71,6 +71,8 @@ class Odometer(Node):
         if len(data) != 2:
             self.get_logger().info('Missed Data!')
             return
+        if not data[0].lstrip('-').isdigit() and not data[1].rstrip('-').isdigit():
+            return
         left_ticks = int(data[0])
         right_ticks = -int(data[1])
         # Transform encoder values (pulses) into distance travelled by the wheels (mm)
