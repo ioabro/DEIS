@@ -15,7 +15,7 @@ class GPS(Node):
 
     def __init__(self):
         super().__init__('gps')
-        self.publisher_ = self.create_publisher(String, 'GPS', 10)
+        self.publisher_ = self.create_publisher(PointStamped, 'GPS', 10)
         self.subscription = self.create_subscription(
             String,
             '/robotPositions',
