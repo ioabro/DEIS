@@ -3,7 +3,7 @@
 # Ioannis Broumas
 # ioabro17@student.hh.se
 # Nov 2020
-
+# 'rtsp://192.168.1.2:554/axis.media/media.amp'
 import time
 import datetime
 from math import cos, sin, pi
@@ -74,18 +74,19 @@ class Odometer(Node):
         if not data[0].lstrip('-').isdigit() or not data[1].lstrip('-').isdigit():
             self.get_logger().info('Missed Data!')
             return
-        left_ticks = int(data[0])
-        right_ticks = -int(data[1])
+        left_ticks = -int(data[0])
+        right_ticks = int(data[1])
         # Transform encoder values (pulses) into distance travelled by the wheels (mm)
         # Change of wheel displacements, i.e displacement of left and right wheels
         dDr = left_ticks * self.MM_PER_PULSE
         dDl = right_ticks * self.MM_PER_PULSE
-        if dDl < 300 and dDr < 300: # Threshold reject outliers
+        if dDl < 150 and dDr < 150: # Threshold reject outliers
             self.current_time = self.get_clock().now().to_msg()
             if self.last_time == None:
                 dt = 0.1
-            else:
-                dt = self.current_time - self.last_time
+            # else:
+            #     dt = self.current_time - self.last_time
+            dt = 0.1
             self.last_time = self.current_time
             # The changes in the forward direction (δd) and heading (δθ)
             dD = (dDr + dDl) / 2 
@@ -122,7 +123,7 @@ class Odometer(Node):
 
             # first, we'll publish the transform over tf
             t = TransformStamped() # create a TransformStamped message that we will send out over tf
-            t.header.stamp = current_time
+            t.header.stamp = self.current_time
             t.header.frame_id = "odom"
             t.child_frame_id = "base_link"
 
@@ -137,7 +138,7 @@ class Odometer(Node):
             # next, we'll publish the odometry message over ROS
             odom = Odometry()
             odom.header.frame_id = "odom"
-            odom.header.stamp = current_time
+            odom.header.stamp = self.current_time
 
             # set the position
             odom.pose.pose.position.x = self.X
