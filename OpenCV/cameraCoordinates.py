@@ -10,6 +10,10 @@ import sys
 import cv2 as cv
 import numpy as np
 
+lower_red = np.array([0,25,25])
+upper_red = np.array([2,255,255])
+element = np.ones((5,5),np.uint8)
+
 # Read the video stream
 cap = cv.VideoCapture(0)
 
@@ -32,6 +36,24 @@ while True:
     if frame is None:
         print('--(!) No captured frame -- Break!')
         break
+
+    hsv_im = cv.cvtColor(frame,cv.COLOR_BGR2HSV)
+    
+    mask = cv.inRange(hsv_im,lower_red,upper_red)
+    mask = cv.erode(mask,element,iterations = 2)
+    
+    rows, cols = np.where(mask == 255)
+
+    check = np.median(cols)
+    
+    if(check > 3/4*HorizontalPixels):
+        print('Object is on the right')
+    elif(1/4*HorizontalPixels<check<3/4*HorizontalPixels):
+        print('Object is in the center')
+    elif(check <1/4*HorizontalPixels):
+        print('Object is on the left')
+    elif(math.isnan(check)):
+        print('No object')
 
     red_frame = frame[:,:,2]
     blue_frame = frame[:,:,0]
