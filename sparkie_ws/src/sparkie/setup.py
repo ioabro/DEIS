@@ -13,7 +13,7 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='ubuntu',
+    maintainer='Ioannis Broumas',
     maintainer_email='ioabro17@student.hh.se',
     description='DEIS SparkFun Redbot',
     license='TODO: License declaration',
@@ -26,7 +26,8 @@ setup(
             'odometer = sparkie.odometer:main',
             'imu = sparkie.imu:main',
             'teleop_C = sparkie.teleop_C:main',
-            'follower = sparkie.follower:main'
+            'follower = sparkie.follower:main',
+            'roof = sparkie.roof:main'
         ],
     },
 )
