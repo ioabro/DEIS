@@ -22,6 +22,7 @@ setup(
         'console_scripts': [
             'sparkie = sparkie.sparkie:main',
             'teleop = sparkie.teleop:main',
+            'teleop_cmd = sparkie.teleop_cmd:main',
             'gps = sparkie.gps:main',
             'odometer = sparkie.odometer:main',
             'imu = sparkie.imu:main',
