@@ -20,6 +20,7 @@ class Sparkie(Node):
         self.subscription = self.create_subscription(String, 'teleop', self.teleop_callback, 10 ) # Don't change this
         self.subscription = self.create_subscription(String, 'GPS', self.gps_callback, 10 )
         self.subscription = self.create_subscription(String, 'cam_follower', self.cam_callback, 10 )
+        self.subscription = self.create_subscription(String, 'cmd', self.cmd_callback, 10 )
         self.publisher_odom = self.create_publisher(String, 'odom_raw', 50)
         self.publisher_imu = self.create_publisher(String, 'imu_r', 10)
         timer_period = 0.1 # seconds
@@ -35,6 +36,9 @@ class Sparkie(Node):
         self.ser.write(msg.data.encode())
         
     def cam_callback(self, msg):
+        self.ser.write(msg.data.encode())
+
+    def cmd_callback(self, msg):
         self.ser.write(msg.data.encode())
         
     def get_sensorData_callback(self):
