@@ -3,7 +3,7 @@
 # Ioannis Broumas
 # ioabro17@student.hh.se
 # Nov 2020
-# 'rtsp://192.168.1.2:554/axis.media/media.amp'
+
 import time
 import datetime
 from math import cos, sin, pi
@@ -48,7 +48,7 @@ class Odometer(Node):
         self.WHEEL_BASE = 0.12
         self.WHEEL_DIAMETER = 0.065 # (m)
         self.PULSES_PER_REVOLUTION = 192 # ticks per wheel revolution
-        self.MM_PER_PULSE = pi*self.WHEEL_DIAMETER / self.PULSES_PER_REVOLUTION; 
+        self.MM_PER_PULSE = pi*self.WHEEL_DIAMETER / self.PULSES_PER_REVOLUTION
         self.SIGMA_WHEEL_ENCODER = 0.5/12;   # The error in the encoder is 0.5mm / 12mm travelled
         # Use the same uncertainty in both of the wheel encoders
         self.SIGMAl = self.SIGMA_WHEEL_ENCODER
