@@ -1,3 +1,8 @@
+# Based on:
+# https://github.com/dji-sdk/Tello-Python
+# https://github.com/damiafuentes/DJITelloPy/blob/master/djitellopy/tello.py
+
+
 import socket
 import threading
 import cv2
@@ -9,7 +14,35 @@ import sys
 class Tello:
     """Wrapper class to interact with the Tello drone."""
 
-    def __init__(self, local_ip, local_port, imperial=False, command_timeout=.3, tello_ip='192.168.10.1',
+    # conversion functions for state protocol fields
+    state_field_converters = {
+        # Tello EDU with mission pads enabled only
+        'mid': int,
+        'x': int,
+        'y': int,
+        'z': int,
+        # 'mpry': (custom format 'x,y,z')
+
+        # common entries
+        'pitch': int,
+        'roll': int,
+        'yaw': int,
+        'vgx': int,
+        'vgy': int,
+        'vgz': int,
+        'templ': int,
+        'temph': int,
+        'tof': int,
+        'h': int,
+        'bat': int,
+        'baro': float,
+        'time': int,
+        'agx': float,
+        'agy': float,
+        'agz': float,
+    }
+
+    def __init__(self, local_ip, local_port, imperial=False, command_timeout=7, tello_ip='192.168.10.1',
                  tello_port=8889):
         """
         Binds to the local IP/port and puts the Tello into command mode.
@@ -22,48 +55,67 @@ class Tello:
         :param tello_ip (str): Tello IP.
         :param tello_port (int): Tello port.
         """
-
+        
         self.abort_flag = False
-        self.decoder = h264decoder.H264Decoder()
-        self.command_timeout = command_timeout
+        self.last_height = 0
         self.imperial = imperial
+        # self.decoder = h264decoder.H264Decoder()
+        self.command_timeout = command_timeout
+        self.MAX_TIME_OUT = 15.0
         self.response = None  
         self.frame = None  # numpy array BGR -- current camera output frame
         self.is_freeze = False  # freeze current camera output
         self.last_frame = None
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # socket for sending cmd
-        self.socket_video = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # socket for receiving video stream
+
         self.tello_ip = tello_ip
         self.tello_address = (tello_ip, tello_port)
-        self.local_video_port = 11111  # port for receiving video stream
-        self.last_height = 0
+        
+        # Commands
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # socket for sending cmd
         self.socket.bind((local_ip, local_port))
 
         # thread for receiving cmd ack
         self.receive_thread = threading.Thread(target=self._receive_thread)
         self.receive_thread.daemon = True
-
         self.receive_thread.start()
 
-        # to receive video -- send cmd: command, streamon
-        self.socket.sendto(b'command', self.tello_address)
-        print ('sent: command')
-        self.socket.sendto(b'streamon', self.tello_address)
-        print ('sent: streamon')
-
+        # Video
+        self.socket_video = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # socket for receiving video stream
+        self.local_video_port = 11111  # port for receiving video stream
         self.socket_video.bind((local_ip, self.local_video_port))
 
         # thread for receiving video
         self.receive_video_thread = threading.Thread(target=self._receive_video_thread)
         self.receive_video_thread.daemon = True
-
         self.receive_video_thread.start() 
+
+        # # to receive video -- send cmd: command, streamon
+        # self.socket.sendto(b'command', self.tello_address)
+        # print ('sent: command')
+        # self.socket.sendto(b'streamon', self.tello_address)
+        # print ('sent: streamon')
+
+        # TELLO STATE
+        self.state = {}
+
+        self.socket_state = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # socket for receiving state
+        self.state_port = 8890  # port for receiving state
+        self.socket_state.bind((local_ip, self.state_port))
+
+        # thread for receiving state
+        self.receive_state_thread = threading.Thread(target=self._receive_state_thread)
+        self.receive_state_thread.daemon = True
+        self.receive_state_thread.start() 
+
+        self.socket_state.sendto('command'.encode('utf-8'), self.tello_address)
+
 
     def __del__(self):
         """Closes the local socket."""
 
         self.socket.close()
         self.socket_video.close()
+        self.socket_state.close()
     
     def read(self):
         """Return the last frame from camera."""
@@ -86,8 +138,8 @@ class Tello:
         """
         while True:
             try:
-                self.response, ip = self.socket.recvfrom(3000)
-                #print(self.response)
+                self.response, ip = self.socket.recvfrom(2048)
+                print("Response ", self.response)
             except socket.error as exc:
                 print ("Caught exception socket.error : %s" % exc)
 
@@ -135,15 +187,62 @@ class Tello:
 
         return res_frame_list
 
+    def parse_state(self, state: str):
+        """Parse a state line to a dictionary
+        Internal method, you normally wouldn't call this yourself.
+        """
+        state = state.strip()
+
+        state = state.split(';')
+
+        if len(state) < 2:
+            print(state)
+            # if state == 'ok':
+            #     self.response = 'ok'
+            return
+
+        for field in state:
+            split = field.split(':')
+            if len(split) < 2:
+                continue
+
+            key = split[0]
+            value = split[1]
+
+            if key in Tello.state_field_converters:
+                try:
+                    value = Tello.state_field_converters[key](value)
+                except Exception as e:
+                    print('Error parsing state value for {}: {} to {}'
+                                       .format(key, value, Tello.state_field_converters[key]))
+
+            self.state[key] = value
+
+        return
+
+
+    def _receive_state_thread(self):
+        """
+        Listens for the state from the Tello.
+
+        Runs as a thread.
+
+        """
+        while True:
+            try:
+                message, ip = self.socket_state.recvfrom(2048)
+                # print(message.decode('utf-8'))
+                self.parse_state(message.decode('ASCII')) # 'utf-8' ?
+            except socket.error as exc:
+                print ("Caught exception socket.error : %s" % exc)
+
     def send_command(self, command):
         """
         Send a command to the Tello and wait for a response.
-
         :param command: Command to send.
         :return (str): Response from Tello.
-
         """
-
+        
         print (">> send cmd: {}".format(command))
         self.abort_flag = False
         timer = threading.Timer(self.command_timeout, self.set_abort_flag)
@@ -164,6 +263,7 @@ class Tello:
         self.response = None
 
         return response
+
     
     def set_abort_flag(self):
         """
@@ -267,6 +367,9 @@ class Tello:
         response = self.response
         return response
 
+    def get_yaw(self):
+        return self.state['yaw']
+
     def get_height(self):
         """Returns height(dm) of tello.
 
@@ -274,16 +377,7 @@ class Tello:
             int: Height(dm) of tello.
 
         """
-        height = self.send_command('height?')
-        height = str(height)
-        height = filter(str.isdigit, height)
-        try:
-            height = int(height)
-            self.last_height = height
-        except:
-            height = self.last_height
-            pass
-        return height
+        return self.state['h']
 
     def get_battery(self):
         """Returns percent battery life remaining.
