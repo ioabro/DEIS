@@ -8,15 +8,18 @@
 import math
 import numpy as np
 import time
+from tello import Tello
+import socket
 
 #ROS 2
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
-from geometry_msgs.msg import Twist
 
-Base = [ 1, 2 ] # cm
-Akut = [ 3, 4 ] # cm
+# ros2 topic pub '112' 'std_msgs/String' '{data:70;70}'
+
+Base = [ 180, 170 ] # cm
+Akut = [ 290, 60 ] # cm
 
 def angle_between(p1, p2, p3):
     x1, y1 = p1
@@ -78,9 +81,9 @@ def getRoute(sx, sy, gx, gy):
 
     # Check which solution applies
     if a1_theta > R_theta:
-        return a2, (360 + a1_theta - q2) % 360
+        return a2, int((360 + a1_theta - q2) % 360)
     else:
-        return a2, (a1_theta + q2)
+        return a2, int(a1_theta + q2)
 
 
 class SuperDrone(Node):
