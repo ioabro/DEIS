@@ -73,9 +73,12 @@ class CMD(Node):
         #
         # clip to +- 100%
         left_percentage = max (min (left_percentage, 100.0), -100.0)
+        left_percentage = -int(round(left_percentage)) # added minus since motor cables are switched
         right_percentage = max (min (right_percentage, 100.0), -100.0)
+        right_percentage = int(round(right_percentage))
         #
         msg.data = '%s %s \n' % (left_percentage, right_percentage)
+        self.get_logger().info('Sending %s %s' % (left_percentage, right_percentage))
         self.publisher_.publish(msg)
 
 def main(args=None):
