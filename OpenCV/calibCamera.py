@@ -49,7 +49,7 @@ while count < 51:
         # Draw and display the corners
         cv.drawChessboardCorners(QueryImg, (9,6), corners2, ret)
         cv.imshow('img', QueryImg)
-        if cv.waitKey(500) == 27: # Wait for 10ms, if key == 27 (esc char) break
+        if cv.waitKey(50) == 27: # Wait for 10ms, if key == 27 (esc char) break
             break
 
 cv.destroyAllWindows()
@@ -69,3 +69,17 @@ pickle.dump((mtx, dist), f)
 f.close()
 
 print(tvecs)
+
+
+# # To import pickl on the other file
+# # Check for camera calibration data
+# if not os.path.exists('/home/ubuntu/dev_ws/src/deis_py_dev/cameraCalibrations/sparkieCalibration.pckl'):
+#     print("You need to calibrate the camera you'll be using. See calibration project directory for details.")
+#     exit()
+# else:
+#     f = open('/home/ubuntu/dev_ws/src/deis_py_dev/cameraCalibrations/sparkieCalibration.pckl', 'rb')
+#     (cameraMatrix, distCoeffs) = pickle.load(f)
+#     f.close()
+#     if cameraMatrix is None or distCoeffs is None:
+#         print("Calibration issue. Remove ./calibration.pckl and recalibrate your camera with CalibrateCamera.py.")
+#         exit()
