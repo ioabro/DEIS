@@ -16,8 +16,8 @@ while(True):
     if(ret):
     # Our operations on the frame come here
         height , width , layers =  frame.shape
-        new_h=int(height/scale)
-        new_w=int(width/scale)
+        new_h = int(height/scale)
+        new_w = int(width/scale)
         resize = cv2.resize(frame, (new_w, new_h)) # <- resize for improved performance
         # Display the resulting frame
         cv2.imshow('Tello',resize)

@@ -1,6 +1,0 @@
-command
-takeoff
-delay 3
-forward 100
-flip f
-land
