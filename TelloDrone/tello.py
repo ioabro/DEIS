@@ -1,3 +1,10 @@
+#! /usr/bin/env python3
+
+# Ioannis Broumas
+# ioabro17@student.hh.se
+# Dec 2020
+# Remember OpenCV is BGR
+
 # Based on:
 # https://github.com/dji-sdk/Tello-Python
 # https://github.com/damiafuentes/DJITelloPy/blob/master/djitellopy/tello.py
@@ -8,7 +15,6 @@ import threading
 import cv2
 import time
 import numpy as np
-import h264decoder
 import sys
 
 class Tello:
@@ -42,7 +48,7 @@ class Tello:
         'agz': float,
     }
 
-    def __init__(self, local_ip, local_port, imperial=False, command_timeout=7, tello_ip='192.168.10.1',
+    def __init__(self, local_ip, local_port, command_timeout=7, tello_ip='192.168.10.1',
                  tello_port=8889):
         """
         Binds to the local IP/port and puts the Tello into command mode.
@@ -58,11 +64,12 @@ class Tello:
         
         self.abort_flag = False
         self.last_height = 0
-        self.imperial = imperial
-        # self.decoder = h264decoder.H264Decoder()
+        
         self.command_timeout = command_timeout
         self.MAX_TIME_OUT = 15.0
         self.response = None  
+
+        self.stream_state = False
         self.frame = None  # numpy array BGR -- current camera output frame
         self.is_freeze = False  # freeze current camera output
         self.last_frame = None
@@ -79,21 +86,20 @@ class Tello:
         self.receive_thread.daemon = True
         self.receive_thread.start()
 
-        # Video
-        self.socket_video = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # socket for receiving video stream
-        self.local_video_port = 11111  # port for receiving video stream
-        self.socket_video.bind((local_ip, self.local_video_port))
+        self.socket.sendto(b'command', self.tello_address)
+
+        # # Video
+        # self.socket_video = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # socket for receiving video stream
+        # self.local_video_port = 11111  # port for receiving video stream
+        # self.socket_video.bind((local_ip, self.local_video_port))
 
         # thread for receiving video
         self.receive_video_thread = threading.Thread(target=self._receive_video_thread)
         self.receive_video_thread.daemon = True
         self.receive_video_thread.start() 
 
-        # # to receive video -- send cmd: command, streamon
-        # self.socket.sendto(b'command', self.tello_address)
-        # print ('sent: command')
+        # to receive video -- send cmd: command, streamon
         # self.socket.sendto(b'streamon', self.tello_address)
-        # print ('sent: streamon')
 
         # TELLO STATE
         self.state = {}
@@ -112,9 +118,8 @@ class Tello:
 
     def __del__(self):
         """Closes the local socket."""
-
         self.socket.close()
-        self.socket_video.close()
+        # self.socket_video.close()
         self.socket_state.close()
     
     def read(self):
@@ -145,60 +150,24 @@ class Tello:
 
     def _receive_video_thread(self):
         """
-        Listens for video streaming (raw h264) from the Tello.
+        Listens for video streaming from the Tello.
 
         Runs as a thread, sets self.frame to the most recent frame Tello captured.
 
         """
-        packet_data = bytes()
+        cap = cv2.VideoCapture('udp://' + self.tello_ip + ':11111')
         while True:
-            try:
-                res_string, ip = self.socket_video.recvfrom(2048) #res_string is of type bytes
-                packet_data += res_string
-                # end of frame
-                if len(res_string) != 1460:
-                    for frame in self._h264_decode(packet_data):
-                        self.frame = frame
-                    packet_data = bytes()
-                    print(sys.getsizeof(packet_data))
-
-            except socket.error as exc:
-                print ("Caught exception socket.error : %s" % exc)
+            ret, self.frame = cap.read()
     
-    def _h264_decode(self, packet_data):
-        """
-        decode raw h264 format data from Tello
-        
-        :param packet_data: raw h264 data array
-       
-        :return: a list of decoded frame
-        """
-        res_frame_list = []
-        frames = self.decoder.decode(packet_data)
-        for framedata in frames:
-            (frame, w, h, ls) = framedata
-            if frame is not None:
-                #print('frame size %i bytes, w %i, h %i, linesize %i' % (len(frame), w, h, ls))
-
-                frame = np.fromstring(frame, dtype=np.ubyte, count=len(frame), sep='')
-                frame = (frame.reshape((h, int(ls / 3), 3)))
-                frame = frame[:, :w, :]
-                res_frame_list.append(frame)
-
-        return res_frame_list
-
     def parse_state(self, state: str):
         """Parse a state line to a dictionary
         Internal method, you normally wouldn't call this yourself.
         """
         state = state.strip()
-
         state = state.split(';')
 
         if len(state) < 2:
             print(state)
-            # if state == 'ok':
-            #     self.response = 'ok'
             return
 
         for field in state:
@@ -264,6 +233,26 @@ class Tello:
 
         return response
 
+    def stream_on(self):
+        """Turn on video streaming. Use `tello.get_frame_read` afterwards.
+        Video Streaming is supported on all tellos when in AP mode (i.e.
+        when your computer is connected to Tello-XXXXXX WiFi ntwork).
+        Currently Tello EDUs do not support video streaming while connected
+        to a wifi network.
+
+        !!! note
+            If the response is 'Unknown command' you have to update the Tello
+            firmware. This can be done using the official Tello app.
+        """
+        self.send_command("streamon")
+        self.stream_state = True
+
+    def stream_off(self):
+        """Turn off video streaming.
+        """
+        self.send_command("streamoff")
+        self.stream_state = False
+
     
     def set_abort_flag(self):
         """
@@ -274,7 +263,6 @@ class Tello:
         timeout has occurred.
 
         """
-
         self.abort_flag = True
 
     def takeoff(self):
@@ -285,7 +273,6 @@ class Tello:
             str: Response from Tello, 'OK' or 'FALSE'.
 
         """
-
         return self.send_command('takeoff')
 
     def set_speed(self, speed):
@@ -307,11 +294,7 @@ class Tello:
         """
 
         speed = float(speed)
-
-        if self.imperial is True:
-            speed = int(round(speed * 44.704))
-        else:
-            speed = int(round(speed * 27.7778))
+        speed = int(round(speed * 27.7778))
 
         return self.send_command('speed %s' % speed)
 
@@ -368,6 +351,12 @@ class Tello:
         return response
 
     def get_yaw(self):
+        """Returns yaw of tello.
+
+        Returns:
+            int: Yaw(degrees) of tello.
+
+        """
         return self.state['yaw']
 
     def get_height(self):
@@ -425,11 +414,7 @@ class Tello:
 
         try:
             speed = float(speed)
-
-            if self.imperial is True:
-                speed = round((speed / 44.704), 1)
-            else:
-                speed = round((speed / 27.7778), 1)
+            speed = round((speed / 27.7778), 1)
         except:
             pass
 
@@ -462,13 +447,8 @@ class Tello:
             str: Response from Tello, 'OK' or 'FALSE'.
 
         """
-
         distance = float(distance)
-
-        if self.imperial is True:
-            distance = int(round(distance * 30.48))
-        else:
-            distance = int(round(distance * 100))
+        distance = int(round(distance * 100))
 
         return self.send_command('%s %s' % (direction, distance))
 
