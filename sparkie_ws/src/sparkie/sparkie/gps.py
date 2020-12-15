@@ -1,4 +1,4 @@
-#! usr/bin/env/python3
+#! /usr/bin/env python3
 
 # Ioannis Broumas
 # ioabro17@student.hh.se
@@ -16,25 +16,40 @@ class GPS(Node):
     def __init__(self):
         super().__init__('gps')
         self.publisher_ = self.create_publisher(Point, 'GPS', 10)
-        self.subscription = self.create_subscription(
+        self.subscription_positions = self.create_subscription(
             String,
             '/robotPositions',
-            self.listener_callback,
+            self.positions_callback,
+            10)
+        self.subscription_actions = self.create_subscription(
+            String,
+            'action',
+            self.action_callback,
             10)
         self.get_logger().info('Node GPS initialized!')
 
-    def listener_callback(self, msg):
+    def positions_callback(self, msg):
         timestamp = self.get_clock().now().to_msg()
-        data = msg.data.strip("[']")
+        data = msg.data.strip("[]'")
         data = data.split(sep=";")
         data = data[0] # Group1 should be first, change accordingly
+        X = 0
+        Y = 0
         point = Point()
         point.x = X
         point.y = Y
-        point.z = 0
-        self.publisher_(point)
-
-
+        point.z = 0.0
+        #self.get_logger().info("Got cordinates %f %f" %(X, Y))
+        self.publisher_.publish(point)
+        
+    def action_callback(self, msg):
+        timestamp = self.get_clock().now().to_msg()
+        data = msg.data.split(sep=",")
+        data = data[5].split(sep=";")
+        msg = String()
+        msg.data = data[0] + " " + data[1]
+        self.publisher_.publish(msg)
+        
 
 def main(args=None):
     rclpy.init(args=args)

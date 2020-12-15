@@ -10,9 +10,13 @@ import math
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
-from geometry_msgs.msg import PointStamped
+from geometry_msgs.msg import Point
 
-Landmarks = [ (0, 0), (0, 0), (0, 0) ]
+VerticalDistance = 2425
+HorizontalDistance = 3635
+
+Landmarks = { 1 : (915, 1430), 2 : (1385, 1430), 91 : (2215, 1430), 92 : (2685, 1430),
+              3 : (915, 965), 4 : (1385, 965), 93 : (2215, 965), 94 : (2685, 965) }
 
 def circleCircle( id1, R1, id2, R2, id3, R3):
 
@@ -52,7 +56,7 @@ def circleCircle( id1, R1, id2, R2, id3, R3):
 
     if h == 0:
         # only one intersection point
-        return [P_x, P_y]
+        return (P_x, P_y)
 
     # Offsets of the intersection points from P.
     rx = -dy * (h/d)
@@ -69,20 +73,20 @@ def circleCircle( id1, R1, id2, R2, id3, R3):
     dy = intersectionPoint1_y - Landmarks[id3][1]
     d1 = math.sqrt((dy*dy) + (dx*dx))
 
-    if d1 == R3: # math.abs(d1 - R3) <= 3
-        return [intersectionPoint1_x, intersectionPoint1_y]
+    if d1 == R3: # math.fabs(d1 - R3) <= 30
+        return (intersectionPoint1_x, intersectionPoint1_y)
     # dx = intersectionPoint2_x - x2
     # dy = intersectionPoint2_y - y2
     # d2 = math.sqrt((dy*dy) + (dx*dx))
     else:
-        return [intersectionPoint2_x, intersectionPoint2_y]
+        return (intersectionPoint2_x, intersectionPoint2_y)
 
 
 class Triangulation(Node):
 
     def __init__(self):
         super().__init__('triangulation')
-        self.publisher_ = self.create_publisher(String, 'sparkieXY', 10)
+        self.publisher_ = self.create_publisher(Point, 'sparkieXY', 10)
         self.subscription = self.create_subscription(
             String,
             'sparkieScanner',
@@ -91,19 +95,18 @@ class Triangulation(Node):
         self.get_logger().info('Node Triangulation initialized!')
     
     def listener_callback(self, msg):
-        timestamp = self.get_clock().now().to_msg()
         data = data.split(sep="_")
-        Location = circleCircle(data[0], data[1], data[2], data[3], data[4], data[5])
+        if len(data) != 6:
+            return
+        Location = circleCircle(float(data[0]), float(data[1]), float(data[2]), float(data[3]), float(data[4]), float(data[5]))
         if Location == None:
             # Something went wrong don't publish
             pass
         else:
-            point = PointStamped()
-            point.header.frame_id = "sparkieXY"
-            point.header.stamp = timestamp
+            point = Point()
             point.x = Location[0]
             point.y = Location[1]
-            point.z = Location[2]
+            point.z = 0.0
             self.publisher_(point)
 
 def main(args=None):

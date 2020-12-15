@@ -6,7 +6,7 @@
 
 import time
 import datetime
-from math import cos, sin, pi
+from math import cos, sin, pi, fabs
 import numpy as np
 
 #ROS 2
@@ -51,17 +51,17 @@ class Odometer(Node):
         self.MM_PER_PULSE = pi*self.WHEEL_DIAMETER / self.PULSES_PER_REVOLUTION
         self.SIGMA_WHEEL_ENCODER = 0.5/12;   # The error in the encoder is 0.5mm / 12mm travelled
         # Use the same uncertainty in both of the wheel encoders
-        self.SIGMAl = self.SIGMA_WHEEL_ENCODER
-        self.SIGMAr = self.SIGMA_WHEEL_ENCODER
+        # self.SIGMAl = self.SIGMA_WHEEL_ENCODER
+        # self.SIGMAr = self.SIGMA_WHEEL_ENCODER
         # calculate the variances
-        self.SIGMAD = (self.SIGMAr**2 + self.SIGMAl**2) / 4
-        self.SIGMAdA = (self.SIGMAr**2 + self.SIGMAl**2) / self.WHEEL_BASE**2
+        # self.SIGMAD = (self.SIGMAr**2 + self.SIGMAl**2) / 4
+        # self.SIGMAdA = (self.SIGMAr**2 + self.SIGMAl**2) / self.WHEEL_BASE**2
         # Init Robot Position, i.e. (0, 0, 90*pi/180) and the Robots Uncertainty
         self.X = 0
         self.Y = 0
         self.A = 0 # 90*pi / 180
         # Uncertainty in state variables [3x3]
-        self.P = [ [1, 0, 0], [0, 1, 0], [0, 0, (1*pi/180)**2] ]
+        # self.P = [ [1, 0, 0], [0, 1, 0], [0, 0, (1*pi/180)**2] ]
 
     # Do KF also
     def listener_callback(self, msg):
@@ -74,8 +74,8 @@ class Odometer(Node):
         if not data[0].lstrip('-').isdigit() or not data[1].lstrip('-').isdigit():
             self.get_logger().info('Missed Data!')
             return
-        left_ticks = -int(data[0])
-        right_ticks = int(data[1])
+        left_ticks = fabs(int(data[0]))
+        right_ticks = fabs(int(data[1]))
         # Transform encoder values (pulses) into distance travelled by the wheels (mm)
         # Change of wheel displacements, i.e displacement of left and right wheels
         dDr = left_ticks * self.MM_PER_PULSE
@@ -92,8 +92,8 @@ class Odometer(Node):
             dD = (dDr + dDl) / 2 
             dA = (dDr - dDl) / self.WHEEL_BASE
             # Calculate the change in X and Y (World co-ordinates)    
-            dX = dD*cos( self.A + dA/2 )*dt
-            dY = dD*sin( self.A + dA/2 )*dt
+            dX = dD*cos( self.A + dA/2 )
+            dY = dD*sin( self.A + dA/2 )
             # Predict the new state variables (World co-ordinates)
             self.X = self.X + dX
             self.Y = self.Y + dY
@@ -102,16 +102,16 @@ class Odometer(Node):
             # Predict the new uncertainty in the state variables (Error prediction)
             # Cxya_old = [ P[0], P[1], P[2] ]   # Uncertainty in state variables at time k-1 [3x3]
             # Uncertainty in the input variables [2x2]
-            Cu = [ [(self.SIGMAl**2 + self.SIGMAr**2)/4, 0 ],
-                [0, ((self.SIGMAl**2 + self.SIGMAr**2)/(self.WHEEL_BASE**2))] ]
+            # Cu = [ [(self.SIGMAl**2 + self.SIGMAr**2)/4, 0 ],
+            #     [0, ((self.SIGMAl**2 + self.SIGMAr**2)/(self.WHEEL_BASE**2))] ]
             # Jacobian matrix w.r.t. X, Y and A [3x3]
-            Axya = [ [1, 0, -dD*sin( self.A + dA/2 )],
-                    [0, 1, dD*cos( self.A + dA/2 )],
-                    [0, 0, 1] ] 
+            # Axya = [ [1, 0, -dD*sin( self.A + dA/2 )],
+            #         [0, 1, dD*cos( self.A + dA/2 )],
+            #         [0, 0, 1] ] 
             # Jacobian matrix w.r.t. dD and dA [3x2]
-            Au = [ [cos( self.A + dA/2 ), -dD*sin( self.A + dA/2 )/2],
-                [sin( self.A + dA/2 ), dD*cos( self.A + dA/2 )/2],
-                [0, 1] ]   
+            # Au = [ [cos( self.A + dA/2 ), -dD*sin( self.A + dA/2 )/2],
+            #     [sin( self.A + dA/2 ), dD*cos( self.A + dA/2 )/2],
+            #     [0, 1] ]   
             # Use the law of error predictions, which gives the new uncertainty
             # Cxya_new = Axya*Cxya_old*Axya' + Au*Cu*Au'
             #self.P = np.matmul(np.matmul(Axya,self.P), np.inv(P)) + np.matmul(np.matmul(Au, Cu), np.inv(Au))

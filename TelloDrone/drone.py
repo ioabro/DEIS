@@ -1,21 +1,20 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Nov 16 10:03:30 2020
-
 @author: Meerashine Joe
 @ Christo George christogeorge@live.in
 """
 
 
-import rclpy
+from deis_py_dev.tello import Tello
+from PIL import Image
 import threading
 import cv2
-import time
+
+import rclpy
 from rclpy.node import Node
-from drone_dev.tello import Tello
 from std_msgs.msg import String
-from PIL import Image
-import datetime
+
 
 
 
@@ -27,11 +26,10 @@ class droneActor(Node):
         self.subscription  # prevent unused variable warning
         self.timer = self.create_timer(20, self.check_drone_battery)
         self.drone = Tello('', 8889)
+        res = self.drone.send_command('command')
+        self.get_logger().info("Init done")
         self.frame = None 
         self.stream_state = False
-        res = self.drone.send_command('command')
-        #res = self.drone.send_command('wifi GROUP1-DRONE verygood')
-        self.get_logger().info("Init done")
         #self.opencv_streamon()
 
     def __del__(self):
@@ -60,11 +58,6 @@ class droneActor(Node):
     
     def opencv_video_thread(self):
         self.get_logger().info("Opencv video thread started")
-        now=datetime.datetime.now()
-        fileEnd = "%d-%d-%d_%d-%d-%d" % (now.year, now.month, now.day, now.hour, now.minute, now.second)
-        videofile = "video/%s.avi" % fileEnd
-        fourcc = cv2.VideoWriter_fourcc('X','V','I','D')
-        video_ = cv2.VideoWriter(videofile, fourcc, 20.0, (960, 720))
         # Runs while 'stream_state' is True
         while self.stream_state:
                         # read the frame for GUI show
@@ -74,14 +67,12 @@ class droneActor(Node):
                 # transfer the format from frame to image         
                 image = Image.fromarray(self.frame)
                 cv2.imshow('Group 1 - Air surveillance', self.frame)
-                video_.write(self.frame)
 
                 # Video Stream is closed if escape key is pressed
                 k = cv2.waitKey(1) & 0xFF
                 if k == 27:
                     break
         cv2.destroyAllWindows()
-        video_.release()
 
 
     def opencv_streamon(self):
@@ -100,16 +91,7 @@ def main(args=None):
 
     drone_.destroy_node()
     rclpy.shutdown()
-    
-    
-    
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
-    
-    
 
 if __name__ == '__main__':
     main()
 
-   

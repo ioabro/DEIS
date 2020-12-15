@@ -17,7 +17,7 @@ from rclpy.node import Node
 from std_msgs.msg import String
 from geometry_msgs.msg import Point
 
-Sparkie_ID = 1 # Change accordingly
+Sparkie_ID = 15 # Change accordingly
 Drone_ID = 2 # Change accordingly
 
 # Constant parameters used in Aruco methods
@@ -85,7 +85,7 @@ def main(args=None):
                         Y = y_mm_to_pixel * cy
                         # Prepare and publish the point
                         point.x = X
-                        point.y = Y
+                        point.y = VerticalDistance - Y
                         point.z = .0
                         r.sparkie_publisher_.publish(point)
                         # Outline the detected marker in our image
@@ -100,7 +100,7 @@ def main(args=None):
                         Y = y_mm_to_pixel * cy
                         # Prepare and publish the point
                         point.x = X
-                        point.y = Y
+                        point.y = VerticalDistance - Y
                         point.z = .0
                         r.drone_publisher_.publish(point)
                         # Outline the detected marker in our image
