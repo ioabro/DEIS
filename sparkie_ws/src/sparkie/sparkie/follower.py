@@ -91,62 +91,47 @@ def main(args=None):
             # Print corners and ids to the console
             #for i, corner in zip(ids, corners):
             #     print('ID: {}; Corners: {}'.format(i, corner))
-            #     if id[i] == 2:
-            #     	print(corner[i])
-            if 2 in ids:
-            	idx = list(ids).index(2)
+
+            if 9 in ids:
+            	idx = list(ids).index(9)
             	print(idx)
-            	print(ids[idx])
-            	print(corners[idx])
             	corner = corners[idx]
             	# Get center
             	cx = (corner[0][0][0] + corner[0][1][0] + corner[0][2][0] + corner[0][3][0]) / 4
             	cy = (corner[0][0][1] + corner[0][1][1] + corner[0][2][1] + corner[0][3][1]) / 4
-            	print("C_X: %d" %cx)
-            	print("C_Y: %d" %cy)
+            	# print("C_X: %d" %cx)
+            	# print("C_Y: %d" %cy)
             	rvecs, tvecs, _objPoints = aruco.estimatePoseSingleMarkers(corner, measuredLength, cameraMatrix, distCoeffs)
             	distance = cv.norm(tvecs)
-            	print(distance) 
+            	print(distance)
+                
+                frame = aruco.drawDetectedMarkers(frame, corners, borderColor=(0, 0, 255))
+                cam_center = HorizontalPixels / 2
 
-            # Outline all of the markers detected in our image
-            frame = aruco.drawDetectedMarkers(frame, corners, borderColor=(0, 0, 255))
-            # Get center
-            center_x = (corners[0][0][0][0] + corners[0][0][1][0] + corners[0][0][2][0] + corners[0][0][3][0]) / 4
-            center_y = (corners[0][0][0][1] + corners[0][0][1][1] + corners[0][0][2][1] + corners[0][0][3][1]) / 4
-            print("Center X: %d" %center_x)
-            print("Center Y: %d" %center_y)
-
-            rvecs, tvecs, _objPoints = aruco.estimatePoseSingleMarkers(corners, measuredLength, cameraMatrix, distCoeffs)
-            distance = cv.norm(tvecs)
-            print(distance)
-
-            # Find center
-            cam_center = HorizontalPixels / 2
-
-            if distance < 17.0:
-                msg.data = '0 0\n'
-                f.publisher_.publish(msg)
-                f.get_logger().info('1. Publishing: "%s"' % msg.data)
-            elif center_x > cam_center:
-                gain = int((cam_center - center_x) / 10)
-                LM = base_speed + gain
-                RM = base_speed 
-                msg.data = '%d %d\n' %(LM, RM)
-                f.publisher_.publish(msg)
-                f.get_logger().info('2. Publishing: "%s"' % msg.data)
-            elif center_x < cam_center:
-                gain = int((center_x - cam_center) / 10)
-                LM = base_speed 
-                RM = base_speed + gain
-                msg.data = '%d %d\n' %(LM, RM)
-                f.publisher_.publish(msg)
-                f.get_logger().info('3. Publishing: "%s"' % msg.data)
-            else:
-                LM = base_speed
-                RM = base_speed 
-                msg.data = '%d %d\n' %(LM, RM)
-                f.publisher_.publish(msg)
-                f.get_logger().info('4. Publishing: "%s"' % msg.data)
+                if distance < 17.0:
+                    msg.data = '0 0\n'
+                    f.publisher_.publish(msg)
+                    f.get_logger().info('1. Publishing: "%s"' % msg.data)
+                elif cx > cam_center:
+                    gain = int((cam_center - cx) / 10)
+                    LM = base_speed + gain
+                    RM = base_speed 
+                    msg.data = '%d %d\n' %(LM, RM)
+                    f.publisher_.publish(msg)
+                    f.get_logger().info('2. Publishing: "%s"' % msg.data)
+                elif cx < cam_center:
+                    gain = int((cx - cam_center) / 10)
+                    LM = base_speed 
+                    RM = base_speed + gain
+                    msg.data = '%d %d\n' %(LM, RM)
+                    f.publisher_.publish(msg)
+                    f.get_logger().info('3. Publishing: "%s"' % msg.data)
+                else:
+                    LM = base_speed
+                    RM = base_speed 
+                    msg.data = '%d %d\n' %(LM, RM)
+                    f.publisher_.publish(msg)
+                    f.get_logger().info('4. Publishing: "%s"' % msg.data)
 
         # No marker found
         else:
