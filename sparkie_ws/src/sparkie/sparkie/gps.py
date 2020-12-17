@@ -27,7 +27,8 @@ class GPS(Node):
             self.action_callback,
             10)
         self.get_logger().info('Node GPS initialized!')
-
+        
+    # Spirals
     def positions_callback(self, msg):
         timestamp = self.get_clock().now().to_msg()
         data = msg.data.strip("[]'")
