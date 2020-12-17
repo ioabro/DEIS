@@ -17,7 +17,7 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 
-# ros2 topic pub 'emergency' 'std_msgs/String' '{data:700;700}'
+# ros2 topic pub 'emergency' 'std_msgs/String' '{data: 700;700} -1'
 
 Base = [ 1800, 1700 ] # mm
 Akut = [ 2900, 600 ] # mm
@@ -32,7 +32,6 @@ def angle_between(p1, p2, p3):
         return deg2 - deg1 
     else:
         return 360 - (deg1 - deg2)
-
 
 def shortestTurn(start, to):
     if start < to: # from < to
@@ -189,6 +188,7 @@ class SuperDrone(Node):
             print("Invalid data!")
             return
 
+        # Check remaining battery
         battery = self.drone.get_battery()
         if 20 >= battery:
             print("Low Battery -%d-" %battery)
@@ -202,6 +202,7 @@ class SuperDrone(Node):
 
         # Takeoff
         res = self.drone.takeoff()
+        # Wait for drone to stabilize
         time.sleep(7)
         self.Z = self.drone.get_height() / 100
         time.sleep(3)
@@ -236,34 +237,6 @@ class SuperDrone(Node):
         time.sleep(3)
         self.Z = self.drone.get_height() / 100
         time.sleep(3)
-        # # Go to point
-        # self.GoToPoint(x, y)
-        # time.sleep(3)
-        # # Lower down - Load the second
-        # self.drone.move_down(self.Z / 2)
-        # time.sleep(3)
-        # self.Z = self.drone.get_height() / 100
-        # print('SuperDrone loading!')
-        # time.sleep(3)
-        # # Fly up again
-        # self.drone.move_up(self.Z / 2)
-        # time.sleep(3)
-        # self.Z = self.drone.get_height() / 100
-        # time.sleep(3)
-        # # Go to Akut
-        # self.GoToPoint(Akut[0], Akut[1])
-        # time.sleep(3)
-        # # Lower down - Unload the second
-        # self.drone.move_down(self.Z / 2)
-        # time.sleep(3)
-        # self.Z = self.drone.get_height() / 100
-        # print('SuperDrone unloading!')
-        # time.sleep(3)
-        # # Fly up again
-        # self.drone.move_up(self.Z / 2)
-        # time.sleep(3)
-        # self.Z = self.drone.get_height() / 100
-        # time.sleep(3)
         # Return to Base
         self.GoToPoint(Base[0], Base[1])
         time.sleep(3)
@@ -276,6 +249,7 @@ class SuperDrone(Node):
 def main(args=None):
     rclpy.init(args=args)
     d = SuperDrone()
+    d.drone.stream_on()
     rclpy.spin(d)
     # Destroy the node explicitly
     d.destroy_node()
