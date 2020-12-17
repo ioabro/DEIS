@@ -41,6 +41,8 @@ def main(args=None):
     # IP camera on the ceiling
     cam = cv.VideoCapture('rtsp://192.168.1.4:554/axis-media/media.amp')
 
+    font = cv.FONT_HERSHEY_SIMPLEX
+
     if not cam.isOpened():
         print('--(!)Error opening video capture')
         cam.release()
@@ -88,8 +90,10 @@ def main(args=None):
                         point.y = VerticalDistance - Y
                         point.z = .0
                         r.sparkie_publisher_.publish(point)
-                        # Outline the detected marker in our image
-                        # frame = aruco.drawDetectedMarkers(frame, corner, borderColor=(0, 0, 255))
+                        CX = 'X :' + str(int(X))
+                        CY = 'Y :' + str(int(Y))
+                        cv.putText(frame, CX, (0,45), font, 1, (255,0,0), 2, cv.LINE_AA)
+                        cv.putText(frame, CY, (0,90), font, 1, (255,0,0), 2, cv.LINE_AA)
                         print(X, Y)
                     if i == Drone_ID:
                         # Find X, Y of the center pixel
