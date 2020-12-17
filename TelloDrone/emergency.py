@@ -10,6 +10,7 @@ import numpy as np
 import time
 from tello import Tello
 import socket
+import cv2 as cv
 
 #ROS 2
 import rclpy
@@ -188,9 +189,15 @@ class SuperDrone(Node):
             print("Invalid data!")
             return
 
-        x = int(data[0])
-        y = int(data[1])
-
+        battery = self.drone.get_battery()
+        if 20 >= battery:
+            print("Low Battery -%d-" %battery)
+            print("Emergency Drone Shutting Down!")
+            self.drone.land()
+            self.drone.shutdown()
+            self.destroy_node()
+            rclpy.shutdown()
+            
         distance, q2 = getRoute(self.X, self.Y, x, y)
 
         # Takeoff
