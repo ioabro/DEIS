@@ -10,10 +10,8 @@
 # https://github.com/damiafuentes/DJITelloPy/blob/master/djitellopy/tello.py
 # https://github.com/Virodroid/easyTello/blob/master/easytello/tello.py
 
-import PIL
 import socket
 import threading
-from threading import Thread
 import time
 import numpy as np
 import sys
@@ -51,9 +49,6 @@ class Tello:
         'agz': float,
     }
 
-    # cap = cv.VideoCapture("udp://@0.0.0.0:11111")
-    # background_frame_read = None
-
     def __init__(self, local_ip, local_port, command_timeout=7, tello_ip='192.168.10.1',
                  tello_port=8889):
         """
@@ -74,8 +69,6 @@ class Tello:
 
         self.frame = None  # numpy array BGR -- current camera output frame
         self.last_frame = None
-
-        # self.cap = cv2.VideoCapture("udp://@0.0.0.0:11111")
 
         self.tello_ip = tello_ip
         self.tello_address = (tello_ip, tello_port)
@@ -141,20 +134,8 @@ class Tello:
 
     def read(self):
         """Return the last frame from camera."""
-        return self.frame
-
-    # def _receive_video_thread(self):
-    #     """
-    #     Listens for video streaming from the Tello.
-    #     Runs as a thread, sets self.frame to the most recent frame Tello captured.
-    #     """
-    #     cap = cv.VideoCapture("udp://@0.0.0.0:11111")
-    #     print("Hej!")
-    #     while self.stream_state:
-    #         ret, self.frame = cap.read()
-    #         if (ret):
-    #             cv.imshow('Tello',self.frame)
-    #         # print("Hej igen!")
+        frame = self.last_frame
+        return frame
 
     def _video_thread(self):
         # Creating stream capture object
@@ -163,6 +144,7 @@ class Tello:
         print("Hej!")
         while self.stream_state:
             ret, self.last_frame = cap.read()
+        # Comment out the below if you want to run operations on the frame
             if ret:
                 cv.imshow('DJI Tello', self.last_frame)
 
@@ -184,26 +166,6 @@ class Tello:
         self.stream_state = False
         self.send_command('streamoff')
 
-    # def stream_on(self):
-    #     """Turn on video streaming. Use `tello.get_frame_read` afterwards.
-    #     Video Streaming is supported on all tellos when in AP mode (i.e.
-    #     when your computer is connected to Tello-XXXXXX WiFi network).
-    #     Currently Tello EDUs do not support video streaming while connected
-    #     to a wifi network.
-    #     !!! note
-    #         If the response is 'Unknown command' you have to update the Tello
-    #         firmware. This can be done using the official Tello app.
-    #     """
-    #     self.send_command("streamon")
-    #     self.stream_state = True
-
-    # def stream_off(self):
-    #     """Turn off video streaming.
-    #     """
-    #     self.send_command("streamoff")
-    #     self.stream_state = False
-
-    
     def parse_state(self, state: str):
         """Parse a state line to a dictionary
         Internal method, you normally wouldn't call this yourself.
@@ -447,43 +409,3 @@ class Tello:
             str: Response from Tello, 'OK' or 'FALSE'.
         """
         return self.move('up', distance)
-
-    # def get_frame_read(self) -> 'BackgroundFrameRead':
-    #     """Get the BackgroundFrameRead object from the camera drone. Then, you just need to call
-    #     backgroundFrameRead.frame to get the actual frame received by the drone.
-    #     Returns:
-    #         BackgroundFrameRead
-    #     """
-    #     if self.background_frame_read is None:
-    #         self.background_frame_read = BackgroundFrameRead(self).start()
-    #     return self.background_frame_read
-
-# class BackgroundFrameRead:
-#     """
-#     This class read frames from a VideoCapture in background. Use
-#     backgroundFrameRead.frame to get the current frame.
-#     """
-
-#     def __init__(self, tello):
-#         tello.cap = cv.VideoCapture("udp://@0.0.0.0:11111")
-#         self.cap = tello.cap
-
-#         if not self.cap.isOpened():
-#             self.cap.open("udp://@0.0.0.0:11111")
-
-#         self.grabbed, self.frame = self.cap.read()
-#         self.stopped = False
-
-#     def start(self):
-#         Thread(target=self.update_frame, args=(), daemon=True).start()
-#         return self
-
-#     def update_frame(self):
-#         while not self.stopped:
-#             if not self.grabbed or not self.cap.isOpened():
-#                 self.stop()
-#             else:
-#                 (self.grabbed, self.frame) = self.cap.read()
-
-#     def stop(self):
-#         self.stopped = True
