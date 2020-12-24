@@ -9,7 +9,7 @@ import numpy as np
 
 def main():
     
-    default_file = 'C:/Users/Giovani/Downloads/capture.png'
+    default_file = 'C:/users/Giovani/Downloads/smarties.png'
     # filename = argv[0] if len(argv) > 0 else default_file
     filename = default_file
     # Loads an image
@@ -42,10 +42,11 @@ def main():
             # circle outline
             radius = i[2]
             cv.circle(src, center, radius, (255, 0, 255), 3)
-    
+
+    cv.namedWindow("detected circles", cv.WINDOW_NORMAL)
     cv.imshow("detected circles", src)
     cv.waitKey(0)
-    
+
     return 0
 
 if __name__ == "__main__":
