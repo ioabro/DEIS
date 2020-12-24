@@ -34,7 +34,7 @@ else:
 ARUCO_PARAMETERS = aruco.DetectorParameters_create()
 ARUCO_DICT = aruco.Dictionary_get(aruco.DICT_6X6_250)
 
-measuredLength = 3.2 # Measured length of one side of the printed marker cm
+measuredLength = 6.0 # 3.2 # Measured length of one side of the printed marker cm
 
 # Create vectors we'll be using for rotations and translations for postures
 rvecs, tvecs = None, None
@@ -51,9 +51,6 @@ def main(args=None):
 
     s = Scanner()
     msg = String()
-
-    ID = []
-    R = []
 
     # Read the video stream
     cap = cv.VideoCapture(0)
@@ -84,22 +81,22 @@ def main(args=None):
         gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
         # Detect Aruco markers
         corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, ARUCO_DICT, parameters=ARUCO_PARAMETERS)
-        
-        if len(ids) >= 3:
-            k = 0
-            # Print corners and ids to the console
-            for i, corner in zip(ids, corners):
-                ID[k] = i
-                rvecs, tvecs, _objPoints = aruco.estimatePoseSingleMarkers(corner, measuredLength, cameraMatrix, distCoeffs)
-            	distance = cv.norm(tvecs)
-                R[k] = distance
-                k += 1
-                if k == 3:
-                    break
 
-            msg.data = ID[0] + "_" + R[0] + "_" + ID[1] + "_" + R[1] + "_" + ID[2] + "_" + R[2]
-            s.publisher_.publish(msg)
-            s.get_logger().info('Publishing: "%s"' % msg.data)
+        if ids is not None:
+            if len(ids) >= 3:
+                msg.data = ""
+                k = 0
+                # Print corners and ids to the console
+                for i, corner in zip(ids, corners):
+                    rvecs, tvecs, _objPoints = aruco.estimatePoseSingleMarkers(corner, measuredLength, cameraMatrix, distCoeffs)
+                    distance = cv.norm(tvecs)
+                    msg.data = msg.data + str(i) + "_" + str(distance) + "_"
+                    k += 1
+                    if k == 3:
+                        break
+
+                s.publisher_.publish(msg)
+                s.get_logger().info('Publishing: "%s"' % msg.data)
 
         # Outline the detected marker in our image
         frame = aruco.drawDetectedMarkers(frame, corners, borderColor=(0, 0, 255))
@@ -113,7 +110,6 @@ def main(args=None):
             break
 
     cv.destroyAllWindows()
-    
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically
     # when the garbage collector destroys the node object)
