@@ -57,7 +57,7 @@ def main(args=None):
     t = Tele()
     msg = String()
     while True:
-        key = getKey(2)
+        key = getKey(0.3) # 0.3 time between
         print(key)
         if key == "8": # Forward
             # motors.drive(255); # forward
@@ -84,8 +84,6 @@ def main(args=None):
         t.publisher_.publish(msg)
         t.get_logger().info('Publishing: "%s"' % msg.data)
 
-    #rclpy.spin(t)
-    
     t.destroy_node()
     rclpy.shutdown()
 
