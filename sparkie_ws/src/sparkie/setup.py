@@ -28,7 +28,9 @@ setup(
             'imu = sparkie.imu:main',
             'teleop_C = sparkie.teleop_C:main',
             'follower = sparkie.follower:main',
-            'roof = sparkie.roof:main'
+            'roof = sparkie.roof:main',
+            'scanner = sparkie.scanner:main',
+            'triangle = sparkie.triangleS:main'
         ],
     },
 )
