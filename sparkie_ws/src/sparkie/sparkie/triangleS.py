@@ -12,11 +12,11 @@ from rclpy.node import Node
 from std_msgs.msg import String
 from geometry_msgs.msg import Point
 
-VerticalDistance = 2425
-HorizontalDistance = 3635
+VerticalDistance = 242.5 # cm
+HorizontalDistance = 363.5 # cm
 
-Landmarks = { 1 : (915, 1430), 2 : (1385, 1430), 91 : (2215, 1430), 92 : (2685, 1430),
-              3 : (915, 965), 4 : (1385, 965), 93 : (2215, 965), 94 : (2685, 965) }
+Landmarks = { 1 : (91.5, 143.0), 2 : (138.5, 143.0), 91 : (221.5, 143.0), 92 : (268.5, 143.0),
+              3 : (91.5, 96.5), 4 : (138.5, 96.5), 93 : (221.5, 96.5), 94 : (268.5, 96.5) }
 
 def circleCircle( id1, R1, id2, R2, id3, R3):
 
@@ -30,15 +30,15 @@ def circleCircle( id1, R1, id2, R2, id3, R3):
 
     # Check if we have gone totally wrong.
     if d == 0:
-        # concentric circles
+        print("concentric circles")
         return None
 
     if (d > (R1 + R2)):
-        # no solution. circles do not intersect.
+        print("no solution. circles do not intersect.")
         return None
 
-    if (d < math.abs(R1 - R2)):
-        # no solution. one circle is contained in the other.
+    if (d < math.fabs(R1 - R2)):
+        print("no solution. one circle is contained in the other.")
         return None
 
     # 'P' is the point where the line joining the circle
@@ -95,19 +95,21 @@ class Triangulation(Node):
         self.get_logger().info('Node Triangulation initialized!')
     
     def listener_callback(self, msg):
+        data = msg.data.replace("[","")
+        data = data.replace("]","")
         data = data.split(sep="_")
-        if len(data) != 6:
+        if len(data) < 6:
+            print("Wrong Data!")
             return
-        Location = circleCircle(float(data[0]), float(data[1]), float(data[2]), float(data[3]), float(data[4]), float(data[5]))
+        Location = circleCircle(int(data[0]), float(data[1]), int(data[2]), float(data[3]), int(data[4]), float(data[5]))
         if Location == None:
-            # Something went wrong don't publish
-            pass
+            print("Something went wrong don't publish.")
         else:
             point = Point()
             point.x = Location[0]
             point.y = Location[1]
             point.z = 0.0
-            self.publisher_(point)
+            self.publisher_.publish(point)
 
 def main(args=None):
     rclpy.init(args=args)
