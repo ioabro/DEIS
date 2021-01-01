@@ -30,7 +30,7 @@ setup(
             'follower = sparkie.follower:main',
             'roof = sparkie.roof:main',
             'scanner = sparkie.scanner:main',
-            'triangle = sparkie.triangleS:main'
+            'triangle = sparkie.triangle:main'
         ],
     },
 )
