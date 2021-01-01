@@ -39,7 +39,7 @@ def main(args=None):
     point = Point()
 
     # IP camera on the ceiling
-    cam = cv.VideoCapture('rtsp://192.168.1.4:554/axis-media/media.amp')
+    cam = cv.VideoCapture('rtsp://192.168.1.2:554/axis-media/media.amp')
 
     font = cv.FONT_HERSHEY_SIMPLEX
 
@@ -85,13 +85,16 @@ def main(args=None):
                         # Convert pixels to mm
                         X = x_mm_to_pixel * cx
                         Y = y_mm_to_pixel * cy
+                        # Add offset and convert to meters
+                        X = round((X + 300) / 1000,3)
+                        Y = round((VerticalDistance - Y + 200) / 1000,3)
                         # Prepare and publish the point
                         point.x = X
-                        point.y = VerticalDistance - Y
+                        point.y = Y
                         point.z = .0
                         r.sparkie_publisher_.publish(point)
-                        CX = 'X :' + str(int(X))
-                        CY = 'Y :' + str(int(Y))
+                        CX = 'X :' + str(float(X))
+                        CY = 'Y :' + str(float(Y))
                         cv.putText(frame, CX, (0,45), font, 1, (255,0,0), 2, cv.LINE_AA)
                         cv.putText(frame, CY, (0,90), font, 1, (255,0,0), 2, cv.LINE_AA)
                         print(X, Y)

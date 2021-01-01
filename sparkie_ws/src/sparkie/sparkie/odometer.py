@@ -41,15 +41,14 @@ class Odometer(Node):
         self.odom_broadcaster = tf2_ros.TransformBroadcaster(self,qos=qos_profile)
 
         self.current_time = self.get_clock().now().to_msg()
-        self.last_time = None
         self.get_logger().info('Node Odometer initialized!')
 
         # Robot initialization
         self.WHEEL_BASE = 0.12
         self.WHEEL_DIAMETER = 0.065 # (m)
         self.PULSES_PER_REVOLUTION = 192 # ticks per wheel revolution
-        self.MM_PER_PULSE = pi*self.WHEEL_DIAMETER / self.PULSES_PER_REVOLUTION
-        self.SIGMA_WHEEL_ENCODER = 0.5/12;   # The error in the encoder is 0.5mm / 12mm travelled
+        self.M_PER_PULSE = pi*self.WHEEL_DIAMETER / self.PULSES_PER_REVOLUTION
+        # self.SIGMA_WHEEL_ENCODER = 0.5/12;   # The error in the encoder is 0.5mm / 12mm travelled
         # Use the same uncertainty in both of the wheel encoders
         # self.SIGMAl = self.SIGMA_WHEEL_ENCODER
         # self.SIGMAr = self.SIGMA_WHEEL_ENCODER
@@ -57,8 +56,8 @@ class Odometer(Node):
         # self.SIGMAD = (self.SIGMAr**2 + self.SIGMAl**2) / 4
         # self.SIGMAdA = (self.SIGMAr**2 + self.SIGMAl**2) / self.WHEEL_BASE**2
         # Init Robot Position, i.e. (0, 0, 90*pi/180) and the Robots Uncertainty
-        self.X = 0
-        self.Y = 0
+        self.X = 0 # 0.45
+        self.Y = 0 # 1.215
         self.A = 0 # 90*pi / 180
         # Uncertainty in state variables [3x3]
         # self.P = [ [1, 0, 0], [0, 1, 0], [0, 0, (1*pi/180)**2] ]
@@ -76,18 +75,12 @@ class Odometer(Node):
             return
         left_ticks = fabs(int(data[0]))
         right_ticks = fabs(int(data[1]))
-        # Transform encoder values (pulses) into distance travelled by the wheels (mm)
+        # Transform encoder values (pulses) into distance travelled by the wheels (m)
         # Change of wheel displacements, i.e displacement of left and right wheels
         dDr = left_ticks * self.MM_PER_PULSE
         dDl = right_ticks * self.MM_PER_PULSE
         if dDl < 150 and dDr < 150: # Threshold reject outliers
             self.current_time = self.get_clock().now().to_msg()
-            if self.last_time == None:
-                dt = 0.1
-            # else:
-            #     dt = self.current_time - self.last_time
-            dt = 0.1
-            self.last_time = self.current_time
             # The changes in the forward direction (δd) and heading (δθ)
             dD = (dDr + dDl) / 2 
             dA = (dDr - dDl) / self.WHEEL_BASE
@@ -97,7 +90,7 @@ class Odometer(Node):
             # Predict the new state variables (World co-ordinates)
             self.X = self.X + dX
             self.Y = self.Y + dY
-            self.A = (self.A + dA) % (2*pi)
+            self.A = 0 # (self.A + dA) % (2*pi)
             
             # Predict the new uncertainty in the state variables (Error prediction)
             # Cxya_old = [ P[0], P[1], P[2] ]   # Uncertainty in state variables at time k-1 [3x3]

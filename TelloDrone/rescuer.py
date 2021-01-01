@@ -4,7 +4,7 @@
 # ioabro17@student.hh.se
 # Dec 2020
 # Remember OpenCV is BGR
-# Go to sparkies last position and try to locate him
+# Go to sparkies last published position and try to locate him
 
 from math import atan2, degrees
 import math
@@ -284,11 +284,11 @@ class SuperDrone(Node):
             print("Invalid data!")
             return
 
-        x = int(data[0])
-        y = int(data[1])
+        x = int(x)
+        y = int(y)
 
         if x > 3635 or y > 2425:
-            print("Invalid data!")
+            print("Invalid input data!")
             return
 
         # Check remaining battery
@@ -320,7 +320,8 @@ class SuperDrone(Node):
         time.sleep(1)
         if self.found:
             self.approach()
-    
+
+        # Go 0.5 m previous to point
         self.GoToPoint(x - 500, y)
         time.sleep(3)
         self.detect()
@@ -328,6 +329,7 @@ class SuperDrone(Node):
         if self.found:
             self.approach()
 
+        # Go to top left corner of the square
         self.drone.rotate_cw(90)
         time.sleep(3)
         self.yaw = (360 + self.yaw - 90) % 360

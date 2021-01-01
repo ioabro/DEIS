@@ -4,9 +4,9 @@
 # ioabro17@student.hh.se
 # Dec 2020
 # Keep track of sparkie's position
-# notify if no position received for > 2 sec
+# notify if no position received for > 3 sec
 
-from math import floor
+import time
 
 import rclpy
 from rclpy.node import Node
@@ -32,17 +32,22 @@ class Notifier(Node):
         
     # Receive position
     def position_callback(self, msg):
-        self.last_time = self.get_clock().now().to_msg()
+        self.last_time = time.time()
         self.last_X = msg.pose.pose.position.x
         self.last_Y = msg.pose.pose.position.y
         self.get_logger().info("Got cordinates %f %f" %(self.X, self.Y))
 
     # Notify drone    
     def notify_callback(self, msg):
-        timestamp = self.get_clock().now().to_msg()
-        if timestamp - self.last_time >= 2.0:
+        timestamp = time.time()
+        # If no position has been received
+        if self.X == None:
+            return
+        # If no position has been received for > 3 sec
+        if timestamp - self.last_time >= 3.0:
             msg = String()
-            msg.data = str(self.last_X) + ";" + str(self.last_Y)
+            # Convert to mm
+            msg.data = str(int(self.last_X*1000)) + ";" + str(int(self.last_Y*1000))
             self.publisher_.publish(msg)
             self.get_logger().info("Notified drone to fly to %f %f" %(self.last_X, self.last_Y))
             self.destroy_node()

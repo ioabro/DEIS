@@ -89,20 +89,21 @@ def main(args=None):
                 # Print corners and ids to the console
                 for i, corner in zip(ids, corners):
                     rvecs, tvecs, _objPoints = aruco.estimatePoseSingleMarkers(corner, measuredLength, cameraMatrix, distCoeffs)
-                    distance = cv.norm(tvecs)
+                    distance = round(cv.norm(tvecs),2)
                     msg.data = msg.data + str(i) + "_" + str(distance) + "_"
                     k += 1
                     if k == 3:
                         break
 
                 s.publisher_.publish(msg)
-                s.get_logger().info('Publishing: "%s"' % msg.data)
+                # s.get_logger().info('Publishing: "%s"' % msg.data)
+                print(msg.data)
 
         # Outline the detected marker in our image
         frame = aruco.drawDetectedMarkers(frame, corners, borderColor=(0, 0, 255))
         # Resize the frame
         frame_resized = cv.resize(frame, (640,360))    
-        cv.imshow("Snapshot", frame_resized)
+        cv.imshow("Scanner", frame_resized)
         
         # cv.imshow("Snapshot", frame)
             
