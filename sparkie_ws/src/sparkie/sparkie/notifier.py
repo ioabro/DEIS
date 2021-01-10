@@ -11,6 +11,7 @@ import time
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
+from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Point, Twist
 
 class Notifier(Node):
@@ -21,8 +22,8 @@ class Notifier(Node):
         timer_period = 3.0 # seconds
         self.timer = self.create_timer(timer_period, self.notify_callback)
         self.subscription_positions = self.create_subscription(
-            Twist,
-            'odom',
+            Odometry,
+            '/odom',
             self.position_callback,
             10)
         self.last_time = None
@@ -35,13 +36,13 @@ class Notifier(Node):
         self.last_time = time.time()
         self.last_X = msg.pose.pose.position.x
         self.last_Y = msg.pose.pose.position.y
-        self.get_logger().info("Got cordinates %f %f" %(self.X, self.Y))
+        self.get_logger().info("Got cordinates %f %f" %(self.last_X, self.last_Y))
 
     # Notify drone    
-    def notify_callback(self, msg):
+    def notify_callback(self):
         timestamp = time.time()
         # If no position has been received
-        if self.X == None:
+        if self.last_X == None:
             return
         # If no position has been received for > 3 sec
         if timestamp - self.last_time >= 3.0:
