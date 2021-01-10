@@ -274,8 +274,8 @@ class SuperDrone(Node):
         else:
             self.Y = self.Y - distance
         
-    def run(self, msg):
-        data = msg.split(sep=";")
+    def listener_callback(self, msg):
+        data = msg.data.split(sep=";")
         # Validate data
         if len(data) != 2:
             print("Invalid data!")
@@ -284,8 +284,8 @@ class SuperDrone(Node):
             print("Invalid data!")
             return
 
-        x = int(x)
-        y = int(y)
+        x = int(data[0])
+        y = int(data[1])
 
         if x > 3635 or y > 2425:
             print("Invalid input data!")
