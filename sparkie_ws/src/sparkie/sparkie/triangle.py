@@ -3,8 +3,8 @@
 # Ioannis Broumas
 # ioabro17@student.hh.se
 # Nov 2020
-# Trilateration with circle intersection method,
-# algebraic solution and least squares solution
+# Trilateration with circle-circle intersection, substitution,
+# least squares, and argmin MSE method
 
 import math
 import itertools
@@ -25,7 +25,7 @@ HorizontalDistance = 363.5 # cm
 Landmarks = { 1 : (360.5, 121.5), 2 : (138.5, 143.0), 91 : (221.5, 143.0), 92 : (338.5, 143.0),
               3 : (91.5, 96.5), 4 : (138.5, 96.5), 93 : (221.5, 96.5), 94 : (338.5, 96.5) }
 
-# Least Square
+# Least Square for 3 Landmarks
 def lsq(o1, r1, o2, r2, o3, r3):
     # 2(xn − x1) 2(yn − y1)
     A = [ [ 2*(o2[0] - o1[0] ), 2*(o2[1] - o1[1]) ],
@@ -44,6 +44,23 @@ def lsq(o1, r1, o2, r2, o3, r3):
     # print(x)
     x = solution[0]
     y = solution[1]
+    return (x,y)
+
+# For 3 or more Landmarks
+def lsqB(marks, r):
+    # print(marks)
+    A = []
+    b = []
+    for k in range(1,len(marks),1):
+        x = marks[k][0] - marks[0][0]
+        y = marks[k][1] - marks[0][1]
+        A.append([2*x, 2*y])
+        _b = r[0]**2 - r[k]**2 - marks[0][0]**2 - marks[0][1]**2 + marks[k][0]**2 + marks[k][1]**2
+        b.append(_b)
+    solution = lstsq(A, b, rcond=None)[0]
+    x = solution[0]
+    y = solution[1]
+    # print(x, y)
     return (x,y)
 
 # Perpendicular point
@@ -133,6 +150,7 @@ class Trilateration(Node):
             print("Wrong Data!")
             return
 
+        # 3 Landmarks
         o1 = Landmarks[int(data[0])]
         o2 = Landmarks[int(data[2])]
         o3 = Landmarks[int(data[4])]
@@ -140,28 +158,38 @@ class Trilateration(Node):
         r2 = float(data[3])
         r3 = float(data[5])
 
+        # For 3 or more landmarks
+        # O = []
+        # R = []
+        # for j in range(0, len(data)-1, 2):
+        #     O.append(Landmarks[int(data[j])])
+        #     R.append(float(data[j+1]))
+
         Location = None
 
         # Least Squares
         pred = lsq( o1, r1, o2, r2, o3, r3)
+        # LS for 3 or more Landmarks
+        # pred = lsqB(O,R)
 
         # Minimize mse
         # positions = [ o1, o2, o3 ]
         # R = [ r1, r2, r3 ]
-        # pred = scipy.optimize.minimize(mse, [0,0], args=(positions, R), method='Nelder-Mead')
+        # Change args accordingly for 3, or 3 and more landmarks
+        # pred = scipy.optimize.minimize(mse, [0,0], args=(O, R), method='Nelder-Mead')
         
         # # Uncommnet and choose cci or substitution
         # j = list(itertools.permutations([(o1, r1), (o2, r2), (o3, r3)],3))
         # min_error = 1000000
         # for c in j:
-        #     pred = substitution(Landmarks[c[0][0]], c[0][1], Landmarks[c[1][0]], c[1][1], Landmarks[c[2][0]], c[2][1])
+        #     pred = substitution(c[0][0], c[0][1], c[1][0], c[1][1], c[2][0], c[2][1])
         #     if pred == None:
         #         continue
         #     if pred[0] < 0 or pred[1] < 0:
         #         continue
         #     if pred[0] > 363.5 or pred[1] > 242.5:
         #         continue
-        #     positions = [ Landmarks[c[0][0]], Landmarks[c[1][0]], Landmarks[c[2][0]] ]
+        #     positions = [ c[0][0], c[1][0], c[2][0] ]
         #     R = [ c[0][1], c[1][1], c[2][1] ]
         #     error = mse(pred, positions, R)
         #     if error < min_error:
@@ -173,8 +201,8 @@ class Trilateration(Node):
         else:
             # Convert to meters and publish
             point = Point()
-            point.x = round(Location[0] / 100, 2)
-            point.y = round(Location[1] / 100, 2)
+            point.x = round(Location[0] / 100, 3)
+            point.y = round(Location[1] / 100, 3)
             point.z = 0.0
             self.publisher_.publish(point)
 
