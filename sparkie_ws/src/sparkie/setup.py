@@ -30,7 +30,10 @@ setup(
             'follower = sparkie.follower:main',
             'roof = sparkie.roof:main',
             'scanner = sparkie.scanner:main',
-            'triangle = sparkie.triangle:main'
+            'triangle = sparkie.triangle:main',
+            'notifier = sparkie.notifier:main',
+            'rescuer = sparkie.rescuer:main',
+            'emergency = sparkie.emergency:main'
         ],
     },
 )
